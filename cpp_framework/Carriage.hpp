@@ -28,14 +28,18 @@ public:
 	static void Set_Coord(int x, int y);
 	static void Move(int dx, int dy);
 	static void Set_Color(EColor text_color, EColor bg_color);
-	static void Set_Color(EColor text_color);
 	static void Set_Default();
 	static void Hide();
 
-private:
+	static void Set_Console_Cursor_Position();
+
 	static int X, Y;
+
+private:
 	static EColor Bg_Color, Text_Color;
 
-	static void Set_Console_Cursor_Position();
+	
 	static void Set_Console_Text_Color();
 };
+
+

@@ -6,7 +6,7 @@ EColor AsCarriage::Text_Color = EC_White;
 EColor AsCarriage::Bg_Color = EC_Black;
 
 //----------------------------------------------------------------------------------------------------
-void AsCarriage::Set_Coord(int x, int y)
+void AsCarriage::Set_Coord(int x = AsCarriage::X, int y = AsCarriage::Y)
 {
 	if (x >= 0 && y >= 0)
 	{
@@ -28,7 +28,7 @@ void AsCarriage::Move(int dx, int dy)
 }
 
 //----------------------------------------------------------------------------------------------------
-void AsCarriage::Set_Color(EColor text_color, EColor bg_color)
+void AsCarriage::Set_Color(EColor text_color = EC_White, EColor bg_color = EC_Black)
 {
 	Text_Color = text_color;
 	Bg_Color = bg_color;
@@ -36,21 +36,11 @@ void AsCarriage::Set_Color(EColor text_color, EColor bg_color)
 }
 
 //----------------------------------------------------------------------------------------------------
-void AsCarriage::Set_Color(EColor text_color)
-{
-	Text_Color = text_color;
-	Set_Console_Text_Color();
-}
-
-//----------------------------------------------------------------------------------------------------
 void AsCarriage::Set_Default()
-{
-	//	X = Y = 0;
+{		
 	Hide();
-
 	Text_Color = EC_White;
 	Bg_Color = EC_Black;
-
 	Set_Console_Cursor_Position();
 	Set_Console_Text_Color();
 }
