@@ -128,29 +128,34 @@ class ATextBox  // поддерживает взаимодействие
      size_t seniorid = 0;        // по умолчанию текущий диалог (ид диалога)
      size_t width = 10;
      size_t height = 1;
-     char bg_symbol = ' ';
+     size_t min_text_length = width * height;
+     
+
+     char bg_symbol = '_';
      bool visible = true;
      bool enabled = true;
 
      std::string name = "";
      std::string text = "";          // память должна динамически выделяться в зависимости от ширины     
                                      // надо переименовать в caption
+     
      SPoint s_point;
      SColor color;
      // tab_order    // зависит от сеньора
 
+
      // ----------------------------------------------------------------------------------------------------          
      ATextBox() noexcept : id(reinterpret_cast<size_t>(this)) {}
-     // ~ALabel()        // освобождение памяти текстовых полей
+     // ~ALabel()        // освобождение памяти текстовых полей     
 
-     // ----------------------------------------------------------------------------------------------------
-     void Create() {}
 
      // ----------------------------------------------------------------------------------------------------
      void Render()
      {
-        AsCarriage::Set_Color(this->color.Text, this->color.Bg);
-        char symbol = this->bg_symbol;       // УБРАТЬ
+       if (this->s_point.X == 0)       
+         this->s_point.X = 1;
+
+        AsCarriage::Set_Color(this->color.Text, this->color.Bg);        
         size_t i = 0, j = 0;        
                
         for (size_t y = 0; y < this->height; y++)
@@ -158,9 +163,10 @@ class ATextBox  // поддерживает взаимодействие
           for (size_t x = 0; x < this->width; x++) 
           {
              AsCarriage::Set_Coord(x + this->s_point.X, y + this->s_point.Y);
-             std::cout << symbol;             
+             printf("%c", this->bg_symbol);
              AsCarriage::Set_Coord(x + this->s_point.X, y + this->s_point.Y);
-             if (j < this->text.size()) std::cout << this->text[j++];                                                   
+             if (j < this->text.size()) 
+               printf("%c", this->text[j++]);
           }
         }
 
@@ -168,12 +174,14 @@ class ATextBox  // поддерживает взаимодействие
         AsCarriage::Set_Default();
      }
 
+
      // ----------------------------------------------------------------------------------------------------
      size_t Get_Index_By_Cursor(SPoint _cursor)    
      {            
        return (_cursor.Y - this->s_point.Y) * this->width + (_cursor.X - this->s_point.X);
      }
 
+     
      // ----------------------------------------------------------------------------------------------------
      SPoint Get_Cursor_By_Index(size_t _cur_index)
      {
@@ -181,20 +189,25 @@ class ATextBox  // поддерживает взаимодействие
         return SPoint{ (_cur_index - y * this->width) + this->s_point.X, y + this->s_point.Y };
      }
 
+
      // ----------------------------------------------------------------------------------------------------
      void Key_Handler()
      {
        bool exit_interaction_entity = false;
-       As_TbCursor::Init(SPoint{this->s_point.X + this->width, this->s_point.Y + this->height}, this->s_point, this->color);       
+       
+       As_TbCursor::Init(SPoint{this->s_point.X + this->width, this->s_point.Y + this->height}, s_point, this->color);
        
        // позиция курсора по умолчанию
        size_t cur_index = this->text.size();
-              
+
+       if (cur_index >= min_text_length)
+         cur_index = min_text_length - 1;
+         
        while (not exit_interaction_entity) 
        {                  
          // визуализация курсора
-         As_TbCursor::Set_Color(color.Bg, color.Text);                  
-         As_TbCursor::Set_Coord(this->Get_Cursor_By_Index(cur_index).X, this->Get_Cursor_By_Index(cur_index).Y);
+         As_TbCursor::Set_Color(color.Bg, color.Text);                                    
+         As_TbCursor::Set_Coord(this->Get_Cursor_By_Index(cur_index).X, this->Get_Cursor_By_Index(cur_index).Y);         
          printf("%c", (cur_index < this->text.size() ? this->text[cur_index] : this->bg_symbol));
          
          // получение сигнала                  
@@ -219,7 +232,12 @@ class ATextBox  // поддерживает взаимодействие
 
            // case EK_Backspace
            // ...
-   
+
+           //case   // символ для печати    рег. выражение
+           // ...
+
+           // case delete
+           // ...   
    
            case EK_UP: 
              As_TbCursor::Move(0, -1);
@@ -234,7 +252,7 @@ class ATextBox  // поддерживает взаимодействие
              break;
 
            case EK_LEFT:              
-             if (cur_index - 1 <= this->text.size())    // перенести в проверку доступности печати
+             if (cur_index - 1 <= this->text.size() and cur_index - 1 < min_text_length)    // перенести в проверку доступности печати
              {
                cur_index--;
                As_TbCursor::Move(-1, 0);
@@ -242,24 +260,24 @@ class ATextBox  // поддерживает взаимодействие
              break;
 
            case EK_RIGHT:                           
-             if (cur_index + 1 <= this->text.size())    // перенести в проверку доступности печати
+             if (cur_index + 1 <= this->text.size() and cur_index + 1 < min_text_length)    // перенести в проверку доступности печати
              {
                cur_index++;
                As_TbCursor::Move(1, 0);
              }
-             break;
-         
-           //case   // символ для печати    рег. выражение
-           // ...
-
-           // case delete
+             break;                    
          
            default:
-           {                
+           {         
+             if (cur_index >= min_text_length - 1)
+               break;
+
              if (key != 224)    // надо убрать после применения рег выражения
              {               
                if (cur_index < this->text.size())
                  this->text[cur_index] = (char)key;
+                 // операция вставки
+                 // ...
                else               
                  this->text += (char)key;
                                                                 
@@ -268,34 +286,36 @@ class ATextBox  // поддерживает взаимодействие
 
                cur_index++;
              }
-
-             
-               
+                            
             }
-         }
-         
- 
+         }         
        }     
        
        AsCarriage::Set_Default();
      }
 
+     // ----------------------------------------------------------------------------------------------------
      void On_Hover()     // должно быть свойством
-     {
-        this->bg_symbol = '_';
-        //Cur_UI_Id = this->id;     // надо ли ??
-        this->Render();         // надо обрабатывать только пустые ячейки
+     {     
+        AsCarriage::Set_Coord(this->s_point.X - 1, this->s_point.Y);
+        printf("[");
+
+        AsCarriage::Set_Coord(this->s_point.X + width, this->s_point.Y + height - 1);
+        printf("]");
+       
         this->Key_Handler();
      }
+
+     // переключение на другой интерактивный компонент ()
+     // ...
 
 };
 
 
-
+// ----------------------------------------------------- MAIN
 int main(int argc, char** argv) 
 {  
-   // AsProgram::Main_Start();
-   
+   // AsProgram::Main_Start();   
    
    ALabel l_1;
    ALabel l_2;
@@ -303,25 +323,22 @@ int main(int argc, char** argv)
    ATextBox tb_1;
    ATextBox tb_2;
   
-   tb_1.s_point.X = 2;
-   tb_1.s_point.Y = 2;
+  
+   //tb_1.s_point.X = 1;
+   //tb_1.s_point.Y = 1;
    tb_1.color.Text = EC_Blue;
    tb_1.color.Bg = EC_White;
-   tb_1.height = 2;
-   tb_1.width = 7;   
-   tb_1.text = "abcdef 12345";
+   tb_1.height = 6;
+   tb_1.width = 10;   
+   tb_1.min_text_length = tb_1.width * tb_1.height;
    
-   //tb_1.Render();
-    tb_1.On_Hover();
    
-   //tb_1.Key_Handler();
+   // tb_1.text = "Hello, World!";
+   tb_1.text = "Hel! 9";
 
-
-   //tb_2.text = "hello world";
-   //tb_2.Render();
-   //tb_2.On_Hover();
-   //tb_2.Key_Handler();
    
+   tb_1.Render();
+   tb_1.On_Hover();
 
 
    return 0;
